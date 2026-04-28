@@ -7,7 +7,6 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: "${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}"
     steps:
       - uses: actions/checkout@v3
       - name: Install Dependencies
@@ -15,6 +14,7 @@ jobs:
       - name: Build
         run: cd FS-9/frontend && npm run build
       - name: Deploy to Firebase
+        if: "${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}"
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
@@ -24,10 +24,10 @@ jobs:
 
   deploy-backend:
     runs-on: ubuntu-latest
-    if: "${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
     steps:
       - uses: actions/checkout@v3
       - name: Configure AWS credentials
+        if: "${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
         uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -35,10 +35,12 @@ jobs:
           aws-region: us-east-1
 
       - name: Login to Amazon ECR
+        if: "${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
       - name: Build, tag, and push image to Amazon ECR
+        if: "${{ secrets.AWS_ACCESS_KEY_ID != '' }}"
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: fs9-backend
@@ -49,6 +51,7 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Deploy to EC2
+        if: "${{ secrets.EC2_HOST != '' }}"
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
@@ -56,6 +59,9 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             docker pull ${{ steps.login-ecr.outputs.registry }}/fs9-backend:latest
-            docker stop fs9-backend || true
-            docker rm fs9-backend || true
-            docker run -d --name fs9-backend -p 80:5000 ${{ steps.login-ecr.outputs.registry }}/fs9-backend:latest
+            docker stop fs9-backend-1 || true
+            docker stop fs9-backend-2 || true
+            docker rm fs9-backend-1 || true
+            docker rm fs9-backend-2 || true
+            docker run -d --name fs9-backend-1 -p 5001:5000 ${{ steps.login-ecr.outputs.registry }}/fs9-backend:latest
+            docker run -d --name fs9-backend-2 -p 5002:5000 ${{ steps.login-ecr.outputs.registry }}/fs9-backend:latest
