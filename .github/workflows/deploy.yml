@@ -40,6 +40,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Create ECR Repository if not exists
+        if: env.AWS_KEY != ''
+        run: |
+          aws ecr describe-repositories --repository-names fs9-backend || aws ecr create-repository --repository-name fs9-backend
+
       - name: Login to Amazon ECR
         if: env.AWS_KEY != ''
         id: login-ecr
@@ -64,6 +69,7 @@ jobs:
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${{ steps.login-ecr.outputs.registry || 'unknown' }}
             docker pull ${{ steps.login-ecr.outputs.registry }}/fs9-backend:latest
             docker stop fs9-backend-1 || true
             docker stop fs9-backend-2 || true
