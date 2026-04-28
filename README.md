@@ -4,7 +4,7 @@ This project demonstrates a complete full-stack deployment pipeline.
 
 ## 🚀 Live Status
 - **Backend (EC2):** [http://54.242.232.156/](http://54.242.232.156/)
-- **Last Deployment:** 28 April 2026
+- **Last Deployment Attempt:** 28 April 2026 - Refreshing Pipeline...
 
 ## 🛠️ Project Structure
 - `/backend`: Node.js Express server with Docker.
